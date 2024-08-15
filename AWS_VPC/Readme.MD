@@ -1,0 +1,1 @@
+This Folder contains the HCL code for creating a VPC with 2 public subnets, 2 EC2 Instances with a project running on NGINX server over port 82 with an application load balancer attached for effecetive load balancing
