@@ -1,29 +1,38 @@
 module "firewall" {
-  source = "./firewall"
-  aws_region = "us-east-1"
-  aws_vpc_id = "vpc-xxxxxxx"
-  aws_igw_id = "igw-xxxxxx"
+  source                     = "./firewall"
+  aws_region                 = "us-east-1"
+  aws_vpc_id                 = "vpc-0f282b3369573ef23"
+  aws_igw_id                 = "igw-07b0fa893c32f8b12"
+  aws_subnet_customer_1_cidr = "172.31.5.0/24"
+  aws_subnet_customer_2_cidr = "172.31.2.0/24"
+  aws_subnet_customer_3_cidr = "172.31.3.0/24"
+  aws_subnet_firewall_cidr   = "172.31.4.0/24"
+}
 
-  subnets = {
-    firewall = {
-      cidr_block              = "10.0.4.0/28"
-      map_public_ip_on_launch = true
-      name                    = "firewall-subnet"
-    }
-    customer1 = {
-      cidr_block              = "10.0.2.0/24"
-      map_public_ip_on_launch = true
-      name                    = "customer1-subnet"
-    }
-    customer2 = {
-      cidr_block              = "10.0.3.0/24"
-      map_public_ip_on_launch = true
-      name                    = "customer2-subnet"
-    }
-    customer3 = {
-      cidr_block              = "10.0.5.0/24"
-      map_public_ip_on_launch = true
-      name                    = "customer3-subnet"
-    }
-  }
+output "customer1_subnet_id" {
+  description = "IDs of the created subnets"
+  value       = module.firewall.customer1_subnet_id
+}
+output "customer2_subnet_id" {
+  description = "IDs of the created subnets"
+  value       = module.firewall.customer2_subnet_id
+}
+output "customer3_subnet_id" {
+  description = "IDs of the created subnets"
+  value       = module.firewall.customer3_subnet_id
+}
+
+output "route_table_id" {
+  description = "ID of the firewall route table"
+  value       = module.firewall.route_table_id
+}
+
+output "security_group_firewall" {
+  description = "Firewall security group ID"
+  value       = module.firewall.security_group_firewall
+}
+
+output "security_group_customer" {
+  description = "Customer security group ID"
+  value       = module.firewall.security_group_customer
 }

@@ -1,6 +1,14 @@
-output "subnet_ids" {
+output "customer1_subnet_id" {
   description = "IDs of the created subnets"
-  value       = { for k, v in aws_subnet.subnets : k => v.id }
+  value       = aws_route_table_association.customer1.id
+}
+output "customer2_subnet_id" {
+  description = "IDs of the created subnets"
+  value       = aws_route_table_association.customer2.id
+}
+output "customer3_subnet_id" {
+  description = "IDs of the created subnets"
+  value       = aws_route_table_association.customer3.id
 }
 
 output "route_table_id" {
