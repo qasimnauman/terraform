@@ -25,3 +25,13 @@ output "security_group_customer" {
   description = "Customer security group ID"
   value       = aws_security_group.customer.id
 }
+
+output "firewall_rule_group_id" {
+  description = "ARN of the Network Firewall rule group"
+  value       = aws_networkfirewall_rule_group.stateful_group.id
+}
+
+output "firewall_policy_id" {
+  description = "ARN of the Network Firewall policy"
+  value       = aws_networkfirewall_firewall_policy.example_policy.id
+}

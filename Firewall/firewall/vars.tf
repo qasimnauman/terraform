@@ -31,3 +31,19 @@ variable "aws_subnet_firewall_cidr" {
   description = "This Holds the value for CIDR block for firewall subnet"
   type        = string
 }
+
+
+variable "firewall_rule_group_name" {
+  description = "Name of the stateful firewall rule group"
+  type        = string
+}
+
+variable "firewall_rule_group_capacity" {
+  description = "Capacity of the firewall rule group"
+  type        = number
+}
+
+variable "firewall_policy_name" {
+  description = "Name of the firewall policy"
+  type        = string
+}
