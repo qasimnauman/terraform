@@ -1,0 +1,123 @@
+terraform {
+  required_providers {
+    azurerm = {
+      source = "hashicorp/azurerm"
+    }
+    azuread = {
+      source = "hashicorp/azuread"
+    }
+    kubernetes = {
+      source = "hashicorp/kubernetes"
+    }
+  }
+}
+
+provider "azurerm" {
+  features {}
+  subscription_id = "5423a55b-395b-48cb-989b-0ea2b1441ca7"
+}
+
+provider "azuread" {}
+
+provider "kubernetes" {
+  host                   = data.azurerm_kubernetes_cluster.aks.kube_config[0].host
+  client_certificate     = base64decode(data.azurerm_kubernetes_cluster.aks.kube_config[0].client_certificate)
+  client_key             = base64decode(data.azurerm_kubernetes_cluster.aks.kube_config[0].client_key)
+  cluster_ca_certificate = base64decode(data.azurerm_kubernetes_cluster.aks.kube_config[0].cluster_ca_certificate)
+}
+
+# 1. Azure AD Group
+resource "azuread_group" "devops_group" {
+  display_name     = "DevOps-Engineers-PCI"
+  security_enabled = true
+}
+
+# 2. Azure AD User (Optional dynamic reference)
+data "azuread_user" "arslan_zpayd" {
+  user_principal_name = "arslan-zpayd@gezimzpayd.onmicrosoft.com"
+}
+
+# 3. Add user to group (you can use dynamic ID if preferred)
+resource "azuread_group_member" "arslan_member" {
+  group_object_id  = azuread_group.devops_group.id
+  member_object_id = "f5025280-72d3-46c5-8dc1-39485cd00355"
+  # You can alternatively use:
+  # member_object_id = data.azuread_user.arslan_zpayd.id
+}
+
+# 4. AKS Cluster
+data "azurerm_kubernetes_cluster" "aks" {
+  name                = "zpayd-online"
+  resource_group_name = "zpayd-online-resource"
+}
+
+# 5. ACR Reference
+data "azurerm_container_registry" "acr" {
+  name                = "zpaydonline"
+  resource_group_name = "zpayd-online-resource"
+}
+
+# 6. Assign Role to AKS Cluster
+resource "azurerm_role_assignment" "aks_access" {
+  scope                = data.azurerm_kubernetes_cluster.aks.id
+  role_definition_name = "Azure Kubernetes Service Cluster User Role"
+  principal_id         = azuread_group.devops_group.id
+}
+
+# 7. Assign Role to ACR
+resource "azurerm_role_assignment" "acr_push" {
+  scope                = data.azurerm_container_registry.acr.id
+  role_definition_name = "AcrPush"
+  principal_id         = azuread_group.devops_group.id
+}
+
+# 8. Kubernetes ClusterRole with pod exec, log, attach access
+resource "kubernetes_cluster_role" "devops_role" {
+  metadata {
+    name = "devops-cluster-operator"
+  }
+
+  rule {
+    api_groups = ["apps", "extensions"]
+    resources  = ["deployments", "replicasets", "statefulsets", "daemonsets"]
+    verbs      = ["get", "list", "watch", "update", "patch", "scale"]
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["pods"]
+    verbs      = ["get", "list", "watch", "delete"]
+  }
+
+  rule {
+    api_groups = ["batch"]
+    resources  = ["jobs", "cronjobs"]
+    verbs      = ["get", "list", "watch", "create", "delete"]
+  }
+
+  # NEW: allow exec/log/attach inside pods
+  rule {
+    api_groups = [""]
+    resources  = ["pods/exec", "pods/log", "pods/attach"]
+    verbs      = ["get", "list", "create"]
+  }
+}
+
+# 9. Bind Azure AD group to Kubernetes ClusterRole
+resource "kubernetes_cluster_role_binding" "devops_binding" {
+  metadata {
+    name = "devops-operator-binding"
+  }
+
+  role_ref {
+    kind      = "ClusterRole"
+    name      = kubernetes_cluster_role.devops_role.metadata[0].name
+    api_group = "rbac.authorization.k8s.io"
+  }
+
+  subject {
+    kind      = "Group"
+    name      = "DevOps-Engineers-PCI"
+    api_group = "rbac.authorization.k8s.io"
+  }
+}
